@@ -39,6 +39,16 @@ trusted input dispatch, verify-button location, round bookkeeping, token verific
 
 The model handles: *which tiles match*.
 
+**Why CDP is the key dependency:** `Input.dispatchMouseEvent` delivers events with
+`isTrusted === true`, so the page cannot tell them from real hardware input — and unlike
+WebDriver it costs no `navigator.webdriver` flag and no driver process.
+`el.dispatchEvent(new MouseEvent('click'))` is `isTrusted === false` and detectable
+instantly. Before doing any input work, confirm the mechanism on this machine:
+
+```bash
+python scripts/probe-trust.py     # CDP vs JS-synthesized isTrusted, side by side
+```
+
 **The two costs must be treated oppositely:**
 
 | | keep fast | why |
@@ -115,6 +125,17 @@ These are all reproduced findings, not speculation.
   a re-serve meant the same grid.)
 - **A wrong answer costs a round plus a reset** — which is why the accurate rung matters
   more than the fast one, and why escalating beats re-guessing.
+
+### The input mechanism
+- **Use `Input.dispatchMouseEvent`, never `dispatchEvent`.** CDP input is `isTrusted=true`;
+  a JS-synthesized event is `isTrusted=false` and detectable. Run `probe-trust.py` to see
+  both flags printed side by side before you change any input code.
+- **No inter-event sleep is needed to stay trusted.** Trust comes from *where* the event
+  is injected (browser input pipeline), not from slowing down. Realism comes from path
+  **shape** — which is a separate requirement, see below.
+- **`--enable-automation` sets `navigator.webdriver = true`.** `browser.py` does not pass
+  it; if you launch Chrome by hand, do not either. A correct launch reads
+  `navigator.webdriver === False`.
 
 ### The harness (my own bugs, both indistinguishable from model failure)
 - **Verify planted ground truth independently before scoring a model.** An off-by-one

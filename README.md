@@ -180,6 +180,7 @@ scripts/
   verify-token.py     read the response token back
   encounter.py        the Serpentine Loop (record / review / next)
   browser.py          start/check/stop a CDP Chromium
+  probe-trust.py      PROVE CDP input is isTrusted=true (vs JS-synthesized = false)
   bench.py            measure CDP latency
   ascii-view.py       render an image region as a luminance map (layout debugging)
 data/
@@ -192,9 +193,39 @@ docs/
 
 ## Dependencies
 
-Two: `websockets` (persistent CDP transport) and `Pillow` (crop the grid for the
-model). `curl` for the vision call — swap it for `urllib` if you prefer. Everything
-else is stdlib. See `requirements.txt`.
+**A browser with the Chrome DevTools Protocol enabled is the critical one**, and it is
+listed in `requirements.txt` along with the two Python packages:
+
+- **Chrome / Chromium (any Chromium fork), driven over CDP**, via `--remote-debugging-port`.
+  This is what makes *trusted* input possible — see below. Requires `Protocol-Version 1.3`
+  (Chrome ~90+); developed on Chrome 153.
+- `websockets` — the persistent CDP transport (one socket for the whole solve, ~192×
+  faster per call than a one-shot CLI, which matters because the challenge clock is the
+  adversary).
+- `Pillow` — crop the grid before handing it to the model.
+- `curl` — the vision HTTP call. Swap for `urllib` if you prefer.
+
+### Why CDP is the key dependency
+
+Trusted input is the whole game, and CDP is the only clean way to get it *together with*
+DOM control:
+
+- `Input.dispatchMouseEvent` delivers events with **`event.isTrusted === true`** — the
+  same flag real hardware carries — and the browser synthesizes correct
+  `pointerdown → mousedown → pointerup → mouseup → click` ordering for you.
+- The obvious alternative, `el.dispatchEvent(new MouseEvent('click'))`, arrives
+  **`isTrusted === false`** and is detectable instantly.
+- WebDriver/Selenium also produce trusted input, but add `navigator.webdriver` and a
+  driver process. CDP has neither: `navigator.webdriver` reads `False` on this stack.
+
+Don't take that on faith — verify it on your own machine:
+
+```bash
+python scripts/probe-trust.py        # prints CDP vs JS-synthesized, side by side
+```
+
+That script is the repo's own proof: it installs a capture-phase listener and reports the
+`isTrusted` flag for each event from both input paths.
 
 ---
 

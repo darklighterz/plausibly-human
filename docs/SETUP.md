@@ -9,13 +9,31 @@ browser** and **where a model credential lives**. Both are handled by `config.py
 Whatever harness you use, three things must be true:
 
 1. A Chromium is listening on `CDP_PORT` with `--remote-debugging-port`.
+   **This is the key dependency**: it is what delivers trusted input
+   (`event.isTrusted === true`) together with DOM control. Nothing else in this repo
+   reaches a page at all.
 2. The scripts can reach `VISION_BASE_URL` with `VISION_API_KEY`.
 3. You navigate the page yourself; the scripts solve the challenge **on the current page**.
 
 ```bash
 python scripts/config.py          # confirms 1–2 and prints key presence
 python scripts/browser.py check   # confirms 1 specifically
+python scripts/probe-trust.py     # confirms input is TRUSTED, not script-synthesized
 ```
+
+### If you use a different browser, keep this property
+
+Any Chromium fork works (Chrome, Chromium, Brave, Edge). What you must preserve is the
+**trusted-input property**, regardless of how you launch it:
+
+- Prefer a direct launch over a driver. CDP from a plain browser process has no
+  `navigator.webdriver` flag and no driver binary in the process tree.
+- **Never pass `--enable-automation`** — it sets `navigator.webdriver = true`, which is
+  precisely the flag you spent the CDP route avoiding. `browser.py` does not pass it.
+- If you route through Selenium/Playwright instead, input is still trusted (both drive CDP
+  underneath), but check the fingerprint yourself — Playwright and Selenium set
+  `navigator.webdriver` unless configured not to. `probe-trust.py` will tell you what your
+  launch actually produces.
 
 ---
 
@@ -123,6 +141,7 @@ change.
 python scripts/config.py            # no MISSING keys, sane target
 python scripts/browser.py check     # CDP alive, protocol version printed
 python scripts/cdp.py 9333          # prints connect + per-call latency
+python scripts/probe-trust.py       # CDP input isTrusted=true, JS-synthesized=false
 ```
 
 `cdp.py`'s self-test should report roughly **`0.7 ms/call`** steady-state. If it reports

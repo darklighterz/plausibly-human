@@ -1,15 +1,59 @@
-# Dependencies
+# Dependencies — plausibly-human
 #
-# Python 3.9+ (the scripts use `from __future__ import annotations`, so 3.9 works).
-# Tested on 3.11.
+# Four things are needed: two Python packages, one browser, and CDP access to it.
+# Everything else is Python stdlib by deliberate choice — the whole point is a
+# small, auditable surface.
 #
 # Install:   python -m venv .venv && . .venv/bin/activate
 #            pip install -r requirements.txt
-#
-# There are only two hard runtime dependencies. Everything else in this repo is
-# stdlib by deliberate choice — the whole point is a small, auditable surface.
 
-# --- hard runtime dependencies -------------------------------------------------
+# ==============================================================================
+# 1. THE BROWSER — this is a HARD dependency, not an environment detail
+# ==============================================================================
+# You need a Chromium-family browser that exposes the Chrome DevTools Protocol
+# (CDP) on a TCP port. This is the component that makes trusted input possible,
+# and it is not optional or swappable:
+#
+#     Google Chrome / Chromium / Brave / Edge   (any Chromium fork)
+#
+# Launch flag that matters:      --remote-debugging-port=<PORT>
+#
+# A CDP-driven browser is the ONLY practical way to get BOTH:
+#
+#   (a) deterministic DOM control  — read geometry, tile rects, prompts, state
+#   (b) input the page cannot distinguish from a real mouse
+#
+# (b) is verified, not assumed. Run `python scripts/probe-trust.py` and you will
+# see CDP-dispatched input arrive with `event.isTrusted === true` — including a
+# fully synthesized `click` with correct pointerdown/pointerup ordering. A
+# JavaScript-synthesized event (`el.dispatchEvent(new MouseEvent('click'))`),
+# which is what most first attempts reach for, arrives `isTrusted === false` and
+# is trivially detectable. The probe prints both side by side.
+#
+# Other paths to trusted input, and why this repo uses CDP:
+#
+#   WebDriver / Selenium / ChromeDriver   trusted (ChromeDriver drives CDP), BUT
+#                                         sets navigator.webdriver and runs a
+#                                         detectable driver process
+#   Playwright / Puppeteer (Chromium)     trusted — both are CDP under the hood,
+#                                         just with a heavier wrapper
+#   WebDriver BiDi                        trusted, modern, more moving parts
+#   xdotool / ydotool / real HID device   genuinely trusted OS input, BUT no
+#                                         coordinate->element mapping; brittle
+#   el.dispatchEvent(new MouseEvent(...)) NOT trusted — detectable instantly
+#   Chrome extension content script        NOT trusted
+#
+# So CDP is the sweet spot: full DOM control AND trusted input, with no driver
+# process and no navigator.webdriver flag (Chrome only sets navigator.webdriver
+# when started with --enable-automation, which browser.py does not pass).
+#
+# Version floor: any Chrome/Chromium that reports Protocol-Version 1.3 is fine
+# (roughly Chrome 90+). Developed and measured against Chrome 153 / protocol 1.3.
+
+# ==============================================================================
+# 2. PYTHON PACKAGES — only two
+# ==============================================================================
+
 # The persistent CDP client (scripts/cdp.py) holds one WebSocket for the whole
 # solve. Falling back to per-call CLI invocations costs ~192x more per CDP call
 # (measured: 142.57 ms/call one-shot vs 0.74 ms/call persistent), and the CAPTCHA
@@ -21,10 +65,16 @@ websockets>=12.0,<16
 # path needs it; the solver itself works with any PNG.
 Pillow>=10.0,<12
 
-# --- optional ------------------------------------------------------------------
+# ==============================================================================
+# 3. OPTIONAL / SYSTEM
+# ==============================================================================
 # curl is used for the vision HTTP call. It ships with macOS and virtually every
 # Linux distro; on Windows use WSL, or install curl.
 #   Debian/Ubuntu:  apt install curl
 #   macOS:          preinstalled
 # If you would rather not shell out, replace the subprocess call in
 # scripts/vision_ladder.py with `urllib.request` — it is a single function.
+#
+# Headless only: you also need an X server or Xvfb
+#   xvfb-run -s "-screen 0 1920x1080x24" python scripts/solve-recaptcha.py
+# Note headless is MORE detectable. See docs/LIMITS.md.
