@@ -136,6 +136,12 @@ These are all reproduced findings, not speculation.
 - **`--enable-automation` sets `navigator.webdriver = true`.** `browser.py` does not pass
   it; if you launch Chrome by hand, do not either. A correct launch reads
   `navigator.webdriver === False`.
+- **If CDP itself becomes a detection signal, do not improvise.** `docs/TRUSTED-INPUT.md`
+  is a prepared fallback ladder (xdotool — measured trusted; Playwright `connectOverCDP`,
+  Selenium, WebDriver BiDi, uinput, hardware, and a DOM-less vision-driven variant) with
+  the switch procedure, a decision tree and fingerprint hygiene. Measure the OS routes with
+  `python scripts/test-alt-routes.py`. Change one variable at a time and record it in the
+  ledger. Note: tiers 1–3 (Playwright/Selenium/BiDi) are documented, not measured.
 
 ### The harness (my own bugs, both indistinguishable from model failure)
 - **Verify planted ground truth independently before scoring a model.** An off-by-one
