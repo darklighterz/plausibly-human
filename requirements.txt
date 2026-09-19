@@ -1,0 +1,30 @@
+# Dependencies
+#
+# Python 3.9+ (the scripts use `from __future__ import annotations`, so 3.9 works).
+# Tested on 3.11.
+#
+# Install:   python -m venv .venv && . .venv/bin/activate
+#            pip install -r requirements.txt
+#
+# There are only two hard runtime dependencies. Everything else in this repo is
+# stdlib by deliberate choice — the whole point is a small, auditable surface.
+
+# --- hard runtime dependencies -------------------------------------------------
+# The persistent CDP client (scripts/cdp.py) holds one WebSocket for the whole
+# solve. Falling back to per-call CLI invocations costs ~192x more per CDP call
+# (measured: 142.57 ms/call one-shot vs 0.74 ms/call persistent), and the CAPTCHA
+# challenge clock is the adversary. This is not optional if you want the timings
+# in README.md to hold.
+websockets>=12.0,<16
+
+# Screenshot cropping for the vision step (grid -> model). Only the crop/encode
+# path needs it; the solver itself works with any PNG.
+Pillow>=10.0,<12
+
+# --- optional ------------------------------------------------------------------
+# curl is used for the vision HTTP call. It ships with macOS and virtually every
+# Linux distro; on Windows use WSL, or install curl.
+#   Debian/Ubuntu:  apt install curl
+#   macOS:          preinstalled
+# If you would rather not shell out, replace the subprocess call in
+# scripts/vision_ladder.py with `urllib.request` — it is a single function.

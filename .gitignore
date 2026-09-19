@@ -1,0 +1,18 @@
+# --- secrets: never commit these ---
+.env
+*.env
+venv/
+.venv/
+env/
+
+# --- runtime artefacts ---
+data/grid.png
+data/*.png
+*.log
+__pycache__/
+*.py[cod]
+
+# --- editors / OS ---
+.vscode/
+.idea/
+.DS_Store
