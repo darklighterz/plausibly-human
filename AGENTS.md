@@ -107,9 +107,12 @@ These are all reproduced findings, not speculation.
 - **Round prompts and tile counts vary inside one challenge.** Observed 4×4 (16) and 3×3
   (9) in the same session, with different prompts. Re-read both every round and
   re-measure tile geometry.
-- **A re-serve is not a wrong answer.** reCAPTCHA sometimes serves the identical prompt
-  and tiles again; answering again with the same rung is correct. Only a *new prompt*
-  warrants a fresh look.
+- **Re-read and re-look EVERY round, even when the prompt repeats.** reCAPTCHA often
+  re-serves the same prompt *and* the same tile count, but that can still be **new
+  images**. Measured: three consecutive `"Select all images with bicycles"` 9-tile rounds
+  returned `[2,5]`, then `[2,5,8]`, then `[2,5]` — all correct, because the tiles differed
+  each time. **Never cache an answer on prompt match.** (Supersedes an earlier claim that
+  a re-serve meant the same grid.)
 - **A wrong answer costs a round plus a reset** — which is why the accurate rung matters
   more than the fast one, and why escalating beats re-guessing.
 
