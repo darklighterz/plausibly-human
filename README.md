@@ -181,6 +181,7 @@ scripts/
   encounter.py        the Serpentine Loop (record / review / next)
   browser.py          start/check/stop a CDP Chromium
   probe-trust.py      PROVE CDP input is isTrusted=true (vs JS-synthesized = false)
+  test-alt-routes.py  measure xdotool / ydotool trust (fallback routes)
   bench.py            measure CDP latency
   ascii-view.py       render an image region as a luminance map (layout debugging)
 data/
@@ -189,6 +190,7 @@ docs/
   MODELS.md           vision models, prompts, and the traps
   LIMITS.md           what is NOT verified; the ethics and legal notes
   SETUP.md            harness-specific notes (Hermes, Claude Code, opencode, ...)
+  TRUSTED-INPUT.md    fallback ladder of trusted-input routes, if CDP stops working
 ```
 
 ## Dependencies
@@ -226,6 +228,12 @@ python scripts/probe-trust.py        # prints CDP vs JS-synthesized, side by sid
 
 That script is the repo's own proof: it installs a capture-phase listener and reports the
 `isTrusted` flag for each event from both input paths.
+
+**If CDP ever stops working**, there is a prepared fallback ladder — measured trust for
+xdotool (verified trusted), Playwright `connectOverCDP`, Selenium, WebDriver BiDi,
+kernel-level uinput, hardware, and a fully DOM-less vision-driven variant — with the
+switch procedure and a decision tree in **`docs/TRUSTED-INPUT.md`**. Run
+`python scripts/test-alt-routes.py` to measure the OS-level routes yourself.
 
 ---
 
