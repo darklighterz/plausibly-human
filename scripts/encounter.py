@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""encounter.py — the improving loop: record every CAPTCHA encounter and learn from it.
+"""encounter.py — the Serpentine Loop: record every CAPTCHA encounter and learn from it.
 
 The point is a flywheel: as we meet new gates we record what the gate did, what we
 tried, what worked, and how long it took. The ledger is plain JSONL so it survives
@@ -123,7 +123,7 @@ def cmd_next(a):
 
 
 def main():
-    p = argparse.ArgumentParser(description="CAPTCHA encounter ledger (improving loop)")
+    p = argparse.ArgumentParser(description="CAPTCHA encounter ledger (the Serpentine Loop)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("record")

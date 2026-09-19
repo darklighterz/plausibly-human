@@ -51,7 +51,7 @@ PACE = os.environ.get("CAPTCHA_PACE", "typical")        # fast | typical | caref
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(HERE)
 LEDGER = os.environ.get("CAPTCHA_LEDGER", os.path.join(REPO_ROOT, "data",
-                                                       "ladder-encounters.jsonl"))
+                                                       "serpentine-encounters.jsonl"))
 
 
 def _read_key_from_configs() -> str | None:

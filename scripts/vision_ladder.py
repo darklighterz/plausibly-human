@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""vision_ladder.py — the vision rung of the Meatbag Ladder, as an ordered escalation.
+"""vision_ladder.py — the vision rung of the Serpentine Loop, as an ordered escalation.
+
+The Serpentine Loop climbs rungs and can slide back down: a failed rung escalates to the
+next, and a good rung is remembered by the ledger so the next pass at a gate starts
+higher up the board.
 
 Vision is not one model, it is a LADDER. Rungs are ordered and we climb only when the
 current rung is not enough — the same discipline as the input ladder, applied to eyes.

@@ -91,7 +91,7 @@ decay:
 - model availability (several vision models used during development were **retired**
   and now fail fast with an error that looks like a bad model).
 
-The encounter ledger (`data/ladder-encounters.jsonl`) plus `scripts/encounter.py` exist
+The encounter ledger (`data/serpentine-encounters.jsonl`) plus `scripts/encounter.py` exist
 so that decay shows up as data rather than as a mystery failure. Record every gate you
 meet; when a rung starts failing, the record is what tells you it is the rung and not
 you.

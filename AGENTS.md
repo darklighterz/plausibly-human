@@ -123,7 +123,13 @@ These are all reproduced findings, not speculation.
 
 ---
 
-## 4. The improving loop — use it, do not skip it
+## 4. The Serpentine Loop — use it, do not skip it
+
+The name matters, so use it correctly. The loop is **serpentine**: you climb rungs, and a
+failure slides you back down — snakes and ladders. What makes it a loop rather than a
+cycle is that it never comes back to the same place: each pass at a gate starts **higher
+up** than the last, because the ledger remembers which rung worked. A serpentine loop is a
+helix — same lap, one turn higher.
 
 Whenever you meet a gate, record it:
 

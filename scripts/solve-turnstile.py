@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""solve-turnstile.py — solve a Cloudflare Turnstile checkbox like a meatbag.
+"""solve-turnstile.py — solve a Cloudflare Turnstile checkbox plausibly-humanly.
 
 The whole point: the checkbox is unreachable by DOM (closed shadow root -> cross-origin
 iframe -> inner shadow root). So don't grab it. Ask the browser where the iframe sits,

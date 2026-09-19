@@ -1,4 +1,4 @@
-# captcha-meatbag
+# plausibly-human
 
 Solve CAPTCHA challenges in a real browser, at a speed that is fast where nobody is
 watching and human where the page is.
@@ -6,6 +6,26 @@ watching and human where the page is.
 **Harness agnostic.** Nothing here depends on Hermes, Claude Code, opencode, Cursor,
 Aider or any other agent runtime. It is plain Python talking to Chrome over the
 DevTools Protocol. Any agent that can run a shell command can use it, and so can you.
+
+---
+
+## Why it is called this
+
+**`plausibly-human`** — the pun is the whole thesis. CAPTCHA stands for *Completely
+Automated Public Turing test to tell Computers and Humans Apart*, and the measure it
+actually applies is not "are you human" but "are you **plausibly** human". So the goal
+is not to be human — it is to pass the only test the page can run. The repo is named
+after the standard it must satisfy, not after what it is.
+
+**The Serpentine Loop** — the name of the improving loop that drives the whole project
+(see below). It is serpentine in two senses at once: the snake, and the winding path. You
+do not climb the ladder in a straight line — a wrong answer drops you back down a rung,
+and you climb again from further along the board. And it is a **loop**, but not a circle:
+each time you come back around to a gate, you enter it **higher up** than the last time,
+because the ledger remembers which rung worked. A serpentine loop is a helix — the same
+lap, one turn higher. That is exactly how the ladder improves: not by being re-derived
+each encounter, but by returning to the same challenges with more of the board already
+known.
 
 ---
 
@@ -37,7 +57,7 @@ Per round that works out to roughly **30 ms of code and one model look**.
 ## Quickstart
 
 ```bash
-git clone <this repo> && cd captcha-meatbag
+git clone https://github.com/darklighterz/plausibly-human && cd plausibly-human
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 
@@ -88,8 +108,8 @@ anywhere that matters.
 
 ## Models
 
-Vision is the only place a model is used, and it is an **ordered ladder**: climb only as
-far as needed. Default ordering, measured on real grids:
+Vision is the only place a model is used, and it is the ordered rung set of the
+Serpentine Loop: climb only as far as needed. Default ordering, measured on real grids:
 
 | Rung | Model | Measured | Role |
 |---|---|---|---|
@@ -122,10 +142,12 @@ them are load-bearing:
 
 ---
 
-## The improving loop
+## The Serpentine Loop (the improving loop)
 
 Every encounter is recorded, so the ladder sharpens from what actually happened instead
-of being re-derived each time:
+of being re-derived each time. This is the Serpentine Loop: you meet the same gates
+repeatedly, but never from the same place — each pass starts higher up because the ledger
+remembers which rung worked:
 
 ```bash
 python scripts/encounter.py record --gate image-grid --outcome pass --rung V1 \
@@ -134,7 +156,12 @@ python scripts/encounter.py review          # what we have met, pass rate, timin
 python scripts/encounter.py next --gate image-grid   # where the NEXT attempt should start
 ```
 
-`data/ladder-encounters.jsonl` is the append-only ledger (shipped populated with real
+**Snakes and ladders, but the board is remembered.** A right answer is a ladder: you climb
+a rung and stay there. A wrong answer is a snake: you slide back down and climb again —
+which is why a wrong guess plus a reset costs more than escalating a rung. The loop is
+what turns a series of games into knowledge of the board.
+
+`data/serpentine-encounters.jsonl` is the append-only ledger (shipped populated with real
 findings). When evidence overturns a rung's rank, **supersede the lesson explicitly**
 rather than leaving two contradictory entries.
 
@@ -151,12 +178,12 @@ scripts/
   solve-turnstile.py  Cloudflare Turnstile
   solve-recaptcha.py  reCAPTCHA v2 (checkbox + image grid)
   verify-token.py     read the response token back
-  encounter.py        the improving loop (record / review / next)
+  encounter.py        the Serpentine Loop (record / review / next)
   browser.py          start/check/stop a CDP Chromium
   bench.py            measure CDP latency
   ascii-view.py       render an image region as a luminance map (layout debugging)
 data/
-  ladder-encounters.jsonl
+  serpentine-encounters.jsonl
 docs/
   MODELS.md           vision models, prompts, and the traps
   LIMITS.md           what is NOT verified; the ethics and legal notes

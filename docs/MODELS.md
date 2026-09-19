@@ -1,10 +1,11 @@
-# MODELS.md — the vision rung of the ladder
+# MODELS.md — the vision rung of the Serpentine Loop
 
-Vision is the **only** place a model is used, and it is an ordered ladder: climb only as
-far as needed. Everything measured here was measured on real reCAPTCHA grids (bicycles,
+Vision is the **only** place a model is used, and it is an ordered rung set: climb only as
+far as needed. A failed rung escalates; a good rung is remembered, so the next pass at the
+same gate starts higher up the board. Everything measured here was measured on real reCAPTCHA grids (bicycles,
 cars, buses, bridges, crosswalks) unless stated otherwise.
 
-## The ladder
+## The rungs
 
 | Rung | Model | Measured on real tiles | Role |
 |---|---|---|---|
