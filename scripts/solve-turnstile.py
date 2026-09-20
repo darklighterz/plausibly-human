@@ -14,6 +14,15 @@ Rungs used:
 Verifies through a DIFFERENT channel than the action: after clicking it does not trust
 the click return value — it polls the widget's response token input.
 
+Two limits measured on a live Cloudflare interstitial (1337x, cookieless profile):
+  * This rung cannot see widget STATE. The challenge iframe is cross-origin, so there
+    is no DOM and no pixels for it: while Cloudflare serves the SPINNER variant the
+    click is a no-op (3 wasted attempts measured). If nothing passes after a couple of
+    tries, fall back to a pixel pass that detects spinner-vs-checkbox and waits.
+  * Coordinates here are VIEWPORT coordinates, which is the point — do NOT convert them
+    to screen space. That mapping was measured ~20 px x / ~26 px y off, and screen
+    captures are also vulnerable to window occlusion.
+
 Transport: this uses the persistent CDP client (cdp.py), not a one-shot CLI. A one-shot
 CLI costs ~142 ms per call versus ~0.74 ms here, and the challenge clock is the adversary.
 
@@ -89,8 +98,8 @@ def box_of_widget():
 
 def token():
     """Read the widget's response token straight from the page's hidden inputs."""
-    js = ("(()=>{const r=document.querySelector('input[name=\\\"cf-turnstile-response\\\"]'),"
-          "g=document.querySelector('input[name=\\\"g-recaptcha-response\\\"]');"
+    js = ("(()=>{const r=document.querySelector('input[name=\"cf-turnstile-response\"]'),"
+          "g=document.querySelector('input[name=\"g-recaptcha-response\"]');"
           "return JSON.stringify({cf:(r&&r.value||'').length,gr:(g&&g.value||'').length,"
           "body:document.body.innerText.replace(/\\n+/g,' | ').slice(0,180)});})()")
     v = conn().eval(js)
@@ -101,6 +110,24 @@ def token():
         except (json.JSONDecodeError, TypeError):
             return {"raw": v[:200]}
     return v if isinstance(v, dict) else {"raw": str(v)[:200]}
+
+
+def stray_targets():
+    """Page targets on this CDP endpoint (see main() for why this is checked).
+
+    With more than one page target a single-target transport can resolve the WRONG
+    tab — and a mis-click that opened a tab is the usual way one appears. Measured
+    on a live gate: a read returned an EMPTY body/title, which a naive success check
+    accepted as "solved" on a page that had not been solved at all.
+    """
+    import json
+    import urllib.request
+    try:
+        tg = json.load(urllib.request.urlopen(
+            f"http://{cfg.CDP_HOST}:{cfg.CDP_PORT}/json", timeout=5))
+    except Exception:
+        return None
+    return [t for t in tg if t.get("type") == "page"]
 
 
 def human_move(tx, ty, steps=22):
@@ -133,6 +160,18 @@ def click(tx, ty):
 
 def main():
     print(f"target: {cfg.CDP_HOST}:{cfg.CDP_PORT}")
+    pages = stray_targets()
+    if pages is not None and len(pages) > 1:
+        # A single-target transport can resolve the wrong tab, and an EMPTY read then
+        # looks like success. Measured on a live gate: a mis-click opened a tab and a
+        # naive check passed on a page that had not been solved. Close strays over raw
+        # HTTP (no websocket): GET /json/close/<targetId>
+        print(f"WARNING: {len(pages)} page targets — reads may come from the wrong tab")
+        for p in pages:
+            print(f"   {p['id'][:8]}  {p.get('url','')[:70]}")
+        print("   close strays first: curl http://%s:%s/json/close/<targetId>"
+              % (cfg.CDP_HOST, cfg.CDP_PORT))
+
     before = token()
     print(f"before: {before}")
 

@@ -38,6 +38,61 @@ python scripts/browser.py start --profile ~/.my-chrome-profile
 - **Cost:** zero. This is what the repo does now.
 - **Switch trigger:** none. Stay here until something demonstrably fails.
 
+#### Tier 0, applied to a Cloudflare *interstitial* ("Just a moment…") — measured
+
+`solve-turnstile.py` was written against a managed test page. It was re-verified on a
+live Cloudflare interstitial (1337x, cookieless profile) and the approach holds —
+with three additions that only appear on real gates.
+
+**The pierce rung works where JS cannot see anything.**
+`DOM.getDocument {depth:-1, pierce:true}` finds the challenge iframe **while
+`document.querySelectorAll('iframe')` returns 0** — the widget sits behind a closed
+shadow root. Measured box: `{x:489.5, y:304, w:300, h:65}`; the trusted click at
+`(box.x+24, box.y+h/2)` = `(514,336)` passed in **~2 s on the first attempt**.
+
+Prefer this over any screen-pixel method: `DOM.getBoxModel` returns **viewport**
+coordinates, so there is no CSS→screen conversion to get wrong. That mapping was
+measured **~20 px x / ~26 px y off** on this box (a CSS→screen click landed at
+`(4410,623)` when the checkbox was at `(4432,598)`), and screen captures are also
+vulnerable to window occlusion. Viewport coordinates dodge both problems.
+
+**But the pierce rung cannot see widget STATE.** The iframe is cross-origin, so
+there is no DOM *and* no pixels for it. While Cloudflare serves the **spinner**
+variant, a click is a no-op — three wasted attempts were measured before falling
+back. A pixel pass (see "State awareness" below) is what detects spinner vs
+checkbox, so keep one as a fallback rather than clicking blind in a loop.
+
+**Verification must be on a different channel, and must reject empty reads.**
+Poll `input[name="cf-turnstile-response"]` length **and** the page title. Require a
+**non-empty** title: a stale/ambiguous target once returned an empty title, which
+passed a naive "solved" check on a page that had not been solved at all. Related —
+several page targets make `chrome-agent <inst> <method>` fail with *"Multiple page
+targets found"*, so a mis-click that opens a tab can silently redirect your reads to
+the wrong tab. Close strays over raw HTTP, no websocket needed:
+`GET http://127.0.0.1:<port>/json/close/<targetId>`.
+
+#### State awareness (why a fallback still exists)
+
+The widget alternates **spinner → checkbox**. Detecting the checkbox needs pixels,
+and the morphology is easy to get wrong:
+
+- Widget box: a wide (180–520 px) band, 35–110 px tall, on a **near-black** backdrop
+  (require >55 % of the surrounding ring < 26 — that test is what rejects Chrome's
+  own UI and any other overlapping window).
+- Checkbox: a 16–48 px near-square bright blob in the **LEFT 30 %** of the box.
+  Measured: a hollow 24×24 square, ~172 px.
+- **A naive "bright square" test also matches** the widget's 1 px **full-height left
+  border** and the **Cloudflare logo** (~35×24, on the RIGHT). Clicking the logo
+  opened Cloudflare's privacy policy in a new tab. Drop full-height column runs and
+  search only the left 30 %.
+- **No square present ⇒ spinner ⇒ wait, do not click.**
+
+#### Don't hammer a gate you can't clear
+
+Repeated fresh-profile attempts from the same IP eventually get served the
+**spinner-only** variant that no click can clear. Stop, wait, or change exit region —
+a retry loop makes it worse, not better.
+
 ### Tier 1 — CDP via Playwright or Puppeteer
 
 Both drive CDP underneath, so trust and DOM are unchanged. You gain their element

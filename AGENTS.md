@@ -125,6 +125,14 @@ These are all reproduced findings, not speculation.
   a re-serve meant the same grid.)
 - **A wrong answer costs a round plus a reset** — which is why the accurate rung matters
   more than the fast one, and why escalating beats re-guessing.
+- **The Turnstile widget has a spinner state, and clicking it is a no-op.** On a live
+  Cloudflare *interstitial* the widget alternates spinner → checkbox. The pierce rung
+  cannot tell them apart (cross-origin iframe: no DOM, no pixels), so it burns attempts
+  while the widget spins — 3 wasted attempts measured. A pixel pass CAN tell: no square
+  in the left 30 % of the widget box ⇒ spinner ⇒ wait, do not click.
+- **Don't hammer a gate you cannot clear.** Repeated attempts from one IP get served the
+  **spinner-only** variant that no click resolves. Waiting, or changing exit region,
+  works; a retry loop makes it worse.
 
 ### The input mechanism
 - **Use `Input.dispatchMouseEvent`, never `dispatchEvent`.** CDP input is `isTrusted=true`;
@@ -150,6 +158,20 @@ These are all reproduced findings, not speculation.
   labels.
 - **Beware a unanimous answer.** Five prompt variants returning byte-identical results
   across two different models is a harness bug, not model behaviour.
+- **Reject EMPTY reads as success.** Measured on a live gate: a mis-click opened a second
+  tab, `chrome-agent` then refused with *"Multiple page targets found"*, and a title check
+  read the wrong tab and returned an EMPTY string — which a naive "solved?" test accepted.
+  Require a **non-empty** title (and ideally a token), and check for extra page targets
+  first. Close strays over raw HTTP, no websocket needed:
+  `GET http://127.0.0.1:<port>/json/close/<targetId>`.
+- **Scope every screen capture to the target window's bounds.** Two Chrome windows at
+  `(1920,24)` and `(1898,60)` overlap almost entirely; a root-window capture shows
+  whichever is on top, so pixel measurements silently describe the WRONG window. Measure
+  the live geometry every run (`xdotool getwindowgeometry`) — windows move. CDP
+  coordinates avoid this class of bug entirely.
+- **Never convert CDP viewport coordinates to screen coordinates to click.** Measured
+  ~20 px x / ~26 px y offset between `window.screenX/screenY` and the X11 frame origin; a
+  click aimed at `(4432,598)` landed at `(4410,623)`. Dispatch in viewport space instead.
 
 ---
 
